@@ -17,38 +17,104 @@ screen = pygame.display.set_mode((screen_width,screen_height))
 pygame.display.set_caption("Snack Game")
 
 
+class Snake:
+    def __init__(self,speed,size,score,direction, head_Pos):
+        self.speed = speed
+        self.bodySize = size
+        self.score = score
+        self.direction = direction
+        self.change_to = self.direction
+        self.head_Pos = head_Pos
+        self.body_positions = [list(head_Pos),
+                               [list(head_Pos)[0]+self.speed,list(head_Pos)[1]],
+                               [list(head_Pos)[0]+2*self.speed,list(head_Pos)[1]]]
+        self.food_position = [random.randint(1, ((screen_width - self.bodySize) // self.speed)) * self.speed,
+                              random.randint(1, ((screen_height - self.bodySize) // self.speed)) * self.speed]
+        self.spawn_food = True
 
-speed=10
-bodySize = speed
-score= 0
-direction = "Up"
-change_to=direction
+    def HandleSnakeMove(self):
+        if self.change_to == "Up" and self.direction != "Down":
+            self.direction = "Up"
+        if self.change_to == "Down" and self.direction  != "Up":
+            self.direction  = "Down"
+        if self.change_to == "Left" and self.direction  != "Right":
+            self.direction = "Left"
+        if self.change_to == "Right" and self.direction  != "Left":
+            self.direction  = "Right"
+
+        if self.direction  == "Up":
+            self.head_Pos[1] -= self.speed
+        if self.direction  == "Down":
+            self.head_Pos[1] += self.speed
+        if self.direction  == "Right":
+            self.head_Pos[0] += self.speed
+        if self.direction  == "Left":
+            self.head_Pos[0] -= self.speed
+
+        if self.head_Pos[0] < 0:
+            self.head_Pos[0] = screen_width
+        if self.head_Pos[0] > screen_width:
+            self.head_Pos[0] = 0
+        if self.head_Pos[1] < 0:
+            self.head_Pos[1] = screen_height
+        if self.head_Pos[1] > screen_height:
+            self.head_Pos[1] = 0
+
+    def SnakeGrowth(self):
+        self.body_positions.insert(0, list(self.head_Pos))
+        if self.head_Pos[0] == self.food_position[0] and self.head_Pos[1] == self.food_position[1]:
+            self.score += 10
+            self.spawn_food = False
+        else:
+            self.body_positions.pop()
+
+        if not self.spawn_food:
+            self.food_position = [random.randint(1, ((screen_width - self.bodySize) // self.speed)) * self.speed,
+                             random.randint(1, ((screen_height - self.bodySize) // self.speed)) * self.speed]
+
+        self.spawn_food = True
+
+    def Draw(self,):
+        for i in range(len(self.body_positions)):
+            color = RED
+            if i == 0:
+                color = BLUE
+            pygame.draw.rect(screen, color, pygame.Rect(self.body_positions[i][0], self.body_positions[i][1], self.bodySize, self.bodySize))
+
+        pygame.draw.rect(screen, YELLOW, pygame.Rect(self.food_position[0], self.food_position[1], self.bodySize, self.bodySize))
+
+    def restart(self,speed,size,score,direction, head_Pos):
+        self.speed = speed
+        self.bodySize = self.speed
+        self.score = score
+        self.direction = direction
+        self.change_to = self.direction
+        self.head_Pos = head_Pos
+        self.body_positions = [list(head_Pos),
+                               [list(head_Pos)[0] + self.speed, list(head_Pos)[1]],
+                               [list(head_Pos)[0] + 2 * self.speed, list(head_Pos)[1]]]
+        # food
+        self.food_position = [random.randint(1, ((screen_width - self.bodySize) // self.speed)) * self.speed,
+                         random.randint(1, ((screen_height - self.bodySize) // self.speed)) * self.speed]
+        self.spawn_food = True
+
+    def GameOver(self):
+        for body in self.body_positions[1:]:
+            if body[0] == self.head_Pos[0] and body[1] == self.head_Pos[1]:
+                return True
+        return False
 
 
-# snake
-head_Pos=[100,100]
-body_positions=[[100,100],
-                [100+speed, 100],
-                [100+2*speed, 100]]
-
-#food
-food_position =[random.randint(1,((screen_width-bodySize)//speed)) * speed,
-                random.randint(1,((screen_height-bodySize)//speed)) * speed]
-spawn_Food=True
+#creating new snake
+snake = Snake(10,10,0,"Up",[100,100])
 
 # fonctions
 def UpdateScore_text(font, size):
     score_font = pygame.font.SysFont(font, size)
-    text_surface = score_font.render("Score : " + str(score), True, (255, 255, 255))
+    text_surface = score_font.render("Score : " + str(snake.score), True, (255, 255, 255))
     text_rect = text_surface.get_rect()
     text_rect.center = (60, 10)
     screen.blit(text_surface, text_rect)
-
-def GameOver():
-    for body in body_positions[1:]:
-        if  body[0]==head_Pos[0] and body[1] == head_Pos[1]:
-            return True
-    return False
 
 def Update_GameOverFont(font,size):
     gameover_font = pygame.font.SysFont(font, size)
@@ -57,78 +123,6 @@ def Update_GameOverFont(font,size):
     screen.blit(game_over_text, game_over_rect)  # Draw game over text
     pygame.display.update()  # Update the display
 
-def restart():
-    global speed, body_size, score, direction, change_to, head_pos, body_positions, food_position, spawn_food
-
-    speed = 10
-    bodySize = speed
-    score = 0
-    direction = "Up"
-    change_to = direction
-
-    head_Pos = [100, 100]
-    body_positions = [[100, 100],
-                      [100 + speed, 100],
-                      [100 + 2 * speed, 100]]
-
-    # food
-    food_position = [random.randint(1, ((screen_width - bodySize) // speed)) * speed,
-                     random.randint(1, ((screen_height - bodySize) // speed)) * speed]
-    spawn_Food = True
-
-def Draw():
-    global  bodySize, body_positions,food_position
-    for i in range(len(body_positions)):
-        color=RED
-        if i == 0:
-           color=BLUE
-        pygame.draw.rect(screen, color, pygame.Rect(body_positions[i][0], body_positions[i][1], bodySize, bodySize))
-
-    pygame.draw.rect(screen, YELLOW, pygame.Rect(food_position[0], food_position[1], bodySize, bodySize))
-
-def SnakeGrowth():
-    global body_positions,bodySize, head_Pos,food_position,speed, spawn_Food,score
-    body_positions.insert(0, list(head_Pos))
-    if head_Pos[0] == food_position[0] and head_Pos[1] == food_position[1]:
-        score += 10
-        spawn_Food = False
-    else:
-        body_positions.pop()
-
-    if not spawn_Food:
-        food_position = [random.randint(1, ((screen_width - bodySize) // speed)) * speed,
-                         random.randint(1, ((screen_height - bodySize) // speed)) * speed]
-
-    spawn_Food = True
-
-def HandleSnakeMove():
-    global change_to,direction,head_Pos
-    if change_to == "Up" and direction != "Down":
-        direction = "Up"
-    if change_to == "Down" and direction != "Up":
-        direction = "Down"
-    if change_to == "Left" and direction != "Right":
-        direction = "Left"
-    if change_to == "Right" and direction != "Left":
-        direction = "Right"
-
-    if direction == "Up":
-        head_Pos[1] -= speed
-    if direction == "Down":
-        head_Pos[1] += speed
-    if direction == "Right":
-        head_Pos[0] += speed
-    if direction == "Left":
-        head_Pos[0] -= speed
-
-    if head_Pos[0] < 0:
-        head_Pos[0] = screen_width
-    if head_Pos[0] > screen_width:
-        head_Pos[0] = 0
-    if head_Pos[1] < 0:
-        head_Pos[1] = screen_height
-    if head_Pos[1] > screen_height:
-        head_Pos[1] = 0
 
 # the game main loop
 running=True
@@ -142,35 +136,36 @@ while running:
         # Moving the player
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_DOWN:
-                change_to="Down"
+                snake.change_to="Down"
 
             if event.key == pygame.K_UP :
-                change_to="Up"
+                snake.change_to="Up"
 
             if event.key == pygame.K_LEFT :
-                change_to="Left"
+                snake.change_to="Left"
 
 
             if event.key == pygame.K_RIGHT:
-                change_to="Right"
+                snake.change_to="Right"
 
 
-    HandleSnakeMove()
+    snake.HandleSnakeMove()
 
-    if GameOver():
-        Update_GameOverFont('times new roman',50)
+    if snake.GameOver():
+        Update_GameOverFont('times new roman', 50)
         time.sleep(2)
-        restart()
+        snake.restart(10, 10, 0, "Up", [100, 100])
 
     #Visuals
     screen.fill(bg_color)
-    SnakeGrowth()
-    Draw()
+    snake.SnakeGrowth()
+    snake.Draw()
+
 
     UpdateScore_text('times new roman',20)
 
     #updating the screen
     pygame.display.flip()
-    clock.tick(speed)
+    clock.tick(snake.speed)
 
 pygame.quit()
