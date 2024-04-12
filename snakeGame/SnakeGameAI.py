@@ -10,10 +10,10 @@ pygame.init()
 
 
 class SnakeGameAI:
-    def __init__(self,sc_width,sc_height,bgColor,speed,size,score,direction, head_Pos):
+    def __init__(self):
         # init screen
-        self.screen_width, self.screen_height = sc_width, sc_height
-        self.bg_color = bgColor
+        self.screen_width, self.screen_height = 800, 600
+        self.bg_color = BLACK
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Snack Game")
@@ -22,7 +22,7 @@ class SnakeGameAI:
 
 
         # init snake
-        self.restart(speed,size,score,direction, head_Pos)
+        self.restart()
 
     def HandleSnakeMove(self, action):
         #[staight, right, left]
@@ -74,15 +74,15 @@ class SnakeGameAI:
 
         pygame.draw.rect(self.screen, YELLOW, pygame.Rect(self.food_position[0], self.food_position[1], self.bodySize, self.bodySize))
 
-    def restart(self,speed,size,score,direction, head_Pos):
-        self.speed = speed
+    def restart(self):
+        self.speed = 10
         self.bodySize = self.speed
-        self.score = score
-        self.direction = direction
-        self.head_Pos = head_Pos
-        self.body_positions = [list(head_Pos),
-                               [list(head_Pos)[0] + self.speed, list(head_Pos)[1]],
-                               [list(head_Pos)[0] + 2 * self.speed, list(head_Pos)[1]]]
+        self.score = 0
+        self.direction = "Up"
+        self.head_Pos = [100, 100]
+        self.body_positions = [[100, 100],
+                               [100 + self.speed, 100],
+                               [100 + 2 * self.speed, 100]]
         # food
         self.food_position = [random.randint(1, ((self.screen_width - self.bodySize) // self.speed)) * self.speed,
                          random.randint(1, ((self.screen_height - self.bodySize) // self.speed)) * self.speed]
@@ -108,7 +108,7 @@ class SnakeGameAI:
         self.text_rect.center = (60, 10)
         self.screen.blit(self.text_surface, self.text_rect)
 
-    def Play_Step(self):
+    def Play_Step(self, action):
         self.frame_iteration += 1
 
         for event in pygame.event.get():
@@ -117,12 +117,11 @@ class SnakeGameAI:
                 pygame.quit()
                 sys.exit()
 
-        self.HandleSnakeMove([1,0,0])
+        self.HandleSnakeMove(action)
 
         self.reward = 0
         if self.GameOver():
             self.reward = -10
-            self.restart(10, 10, 0, "Up", [100, 100])
             return self.reward,self.GameOver(), self.score
 
         # Visuals
@@ -138,6 +137,3 @@ class SnakeGameAI:
 
         return self.reward, self.GameOver(), self.score
 
-
-#creating new snake
-snake = SnakeGameAI(800,600,BLACK,10,10,0,"Up",[100,100])
