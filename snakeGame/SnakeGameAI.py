@@ -75,14 +75,14 @@ class SnakeGameAI:
         pygame.draw.rect(self.screen, YELLOW, pygame.Rect(self.food_position[0], self.food_position[1], self.bodySize, self.bodySize))
 
     def restart(self):
-        self.speed = 10
+        self.speed = 20
         self.bodySize = self.speed
         self.score = 0
         self.direction = "Up"
         self.head_Pos = [100, 100]
         self.body_positions = [[100, 100],
-                               [100 + self.speed, 100],
-                               [100 + 2 * self.speed, 100]]
+                               [100 + self.bodySize, 100],
+                               [100 + 2 * self.bodySize, 100]]
         # food
         self.food_position = [random.randint(1, ((self.screen_width - self.bodySize) // self.speed)) * self.speed,
                          random.randint(1, ((self.screen_height - self.bodySize) // self.speed)) * self.speed]
