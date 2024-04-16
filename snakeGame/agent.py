@@ -137,6 +137,7 @@ def train():
             if score>record:
                 record= score
                 agent.model.save()
+
             print("Game",agent.nb_games, "Score", score, "Record",record)
 
             plot_score.append(score)

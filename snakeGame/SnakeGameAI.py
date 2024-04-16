@@ -17,7 +17,6 @@ class SnakeGameAI:
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Snack Game")
-        self.running = True
         self.reward = 0
 
 
@@ -113,9 +112,7 @@ class SnakeGameAI:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
                 pygame.quit()
-                sys.exit()
 
         self.HandleSnakeMove(action)
 
