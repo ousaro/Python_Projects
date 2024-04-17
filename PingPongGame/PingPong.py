@@ -44,6 +44,8 @@ class Ball:
         self.color = color
         self.speed = speed
         self.direction = np.array([1, 1], dtype=float)  # Initial direction vector
+        self.score1 = 0
+        self.score2 =0
 
     def draw_circle(self):
         pygame.draw.circle(self.screen, self.color, (int(self.center[0]), int(self.center[1])), self.radius)
@@ -60,10 +62,16 @@ class Ball:
 
 
 
-        if  self.center[0] + self.radius < 0 or self.center[0] - self.radius > screen_width:
+        if  self.center[0] + self.radius < 0 :
             self.center[0] = screen_width//2
             self.center[1] = screen_height//2
             self.ChageDirection(random.choice([1, -1]), random.choice([1, -1]))
+            self.score2 +=1
+        if  self.center[0] - self.radius > screen_width:
+            self.center[0] = screen_width//2
+            self.center[1] = screen_height//2
+            self.ChageDirection(random.choice([1, -1]), random.choice([1, -1]))
+            self.score1 +=1
 
 
         # Update ball position based on speed and direction
@@ -99,7 +107,6 @@ class PingPongGame:
 
 
     def restart(self):
-        self.score = 0
         self.player1 = Padel(self.screen, 15, 120, 15, 100, WHITE, 5)
         self.player2 = Padel(self.screen, 15, 120, self.screen_width-30, 100, WHITE, 5)
         self.ball = Ball(self.screen,10, [self.screen_width//2,self.screen_height//2],WHITE,4)
@@ -112,7 +119,6 @@ class PingPongGame:
     def Draw(self):
         self.player1.draw()
         self.player2.draw()
-        # Draw the ball on the screen
         self.ball.draw_circle()
 
     def GameOver(self, pt=None):
@@ -126,11 +132,11 @@ class PingPongGame:
             return True
         return False
 
-    def UpdateScore_text(self,font, size):
+    def UpdateScore_text(self,font, size, score, pos):
         self.score_font = pygame.font.SysFont(font, size)
-        self.text_surface = self.score_font.render("Score : " + str(self.score), True, (255, 255, 255))
+        self.text_surface = self.score_font.render("Score : " + str(score), True, (255, 255, 255))
         self.text_rect = self.text_surface.get_rect()
-        self.text_rect.center = (60, 10)
+        self.text_rect.center = pos
         self.screen.blit(self.text_surface, self.text_rect)
 
     def update_player_position(self):
@@ -181,13 +187,16 @@ class PingPongGame:
 
         self.ball.MoveBall(self.screen_width,self.screen_height, self.player1, self.player2)
 
-
         # Update player position based on movement flags
         self.update_player_position()
+
+
 
         # Draw objects
         self.screen.fill(self.bg_color)
         self.Draw()
+        self.UpdateScore_text("Arial", 20, self.ball.score1, (60, 20))
+        self.UpdateScore_text("Arial", 20, self.ball.score2, (self.screen_width - 100, 20))
 
         # Update screen
         pygame.display.flip()
