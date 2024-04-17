@@ -1,3 +1,5 @@
+import time
+import math
 import pygame
 import random
 import  numpy as np
@@ -23,27 +25,64 @@ class Padel:
     def draw(self):
         pygame.draw.rect(self.screen, self.color, self.rect)  # Draw the paddle using the rectangle
 
-    def move(self, x_delta, y_delta):
-        self.rect.move_ip(x_delta, y_delta)  # Move the paddle rectangle in place
+    def move(self, x_delta, y_delta, screen_height):
+        isUpCollision = self.rect.y < 0
+        isDownCollison = self.rect.y > screen_height - self.height
+        if isUpCollision:
+            self.rect.y = 0
+        if isDownCollison:
+            self.rect.y = screen_height - self.height
+        # Move the paddle rectangle in place
+        self.rect.y += y_delta
 
 
 class Ball:
-    def __init__(self, radious, xPos, yPos, color, speed):
-        self.radious = radious
-        self.xPos = xPos
-        self.yPos = yPos
+    def __init__(self, screen, radius, center, color, speed):
+        self.screen = screen
+        self.center = np.array(center, dtype=float)  # Use floating-point coordinates
+        self.radius = radius
         self.color = color
         self.speed = speed
-        self.xDirection = 1
-        self.yDirection = 1
+        self.direction = np.array([1, 1], dtype=float)  # Initial direction vector
 
-    def MoveBall(self, x ,y):
-        self.xPos += x * self.xDirection
-        self.yPos += y * self.yDirection
+    def draw_circle(self):
+        pygame.draw.circle(self.screen, self.color, (int(self.center[0]), int(self.center[1])), self.radius)
+
+    def MoveBall(self, screen_width, screen_height, player1, player2):
+
+        isPlayer1Collision = self.rect_circle_collision(player1)
+        isPlayer2Collision = self.rect_circle_collision(player2)
+
+        if isPlayer1Collision or isPlayer2Collision:
+            self.ChageDirection(-1,1)
+        if self.center[1] - self.radius < 0 or self.center[1] + self.radius > screen_height:
+            self.ChageDirection(1,-1)
+
+
+
+        if  self.center[0] + self.radius < 0 or self.center[0] - self.radius > screen_width:
+            self.center[0] = screen_width//2
+            self.center[1] = screen_height//2
+            self.ChageDirection(random.choice([1, -1]), random.choice([1, -1]))
+
+
+        # Update ball position based on speed and direction
+        self.center += self.speed * self.direction
+
+    def rect_circle_collision(self, player):
+        # Find the closest point on the rectangle to the circle's center
+        closest_x = max(player.rect.left, min(self.center[0], player.rect.right))
+        closest_y = max(player.rect.top, min(self.center[1], player.rect.bottom))
+
+        # Calculate the distance between the closest point and the circle's center
+        distance = math.sqrt((closest_x - self.center[0]) ** 2 + (closest_y - self.center[1]) ** 2)
+
+        # Check if the distance is less than or equal to the circle's radius
+        return distance < self.radius
 
     def ChageDirection(self, xFactor, yFactor):
-        self.xDirection *= xFactor
-        self.yDirection *= yFactor
+        self.direction[0] *= xFactor
+        self.direction[1] *= yFactor
 
 
 class PingPongGame:
@@ -61,11 +100,20 @@ class PingPongGame:
 
     def restart(self):
         self.score = 0
-        self.player1 = Padel(self.screen, 15, 120, 15, 100, WHITE, 15)
+        self.player1 = Padel(self.screen, 15, 120, 15, 100, WHITE, 5)
+        self.player2 = Padel(self.screen, 15, 120, self.screen_width-30, 100, WHITE, 5)
+        self.ball = Ball(self.screen,10, [self.screen_width//2,self.screen_height//2],WHITE,4)
+        self.move_up_P1 = False
+        self.move_down_P1 = False
+        self.move_up_P2 = False
+        self.move_down_P2 = False
 
 
     def Draw(self):
         self.player1.draw()
+        self.player2.draw()
+        # Draw the ball on the screen
+        self.ball.draw_circle()
 
     def GameOver(self, pt=None):
         if pt == None:
@@ -85,21 +133,57 @@ class PingPongGame:
         self.text_rect.center = (60, 10)
         self.screen.blit(self.text_surface, self.text_rect)
 
+    def update_player_position(self):
+        if self.move_down_P1:
+            self.player1.move(0, self.player1.speed, self.screen_height)
+        if self.move_up_P1:
+            self.player1.move(0, -self.player1.speed, self.screen_height)
+
+        if self.move_down_P2:
+            self.player2.move(0, self.player2.speed, self.screen_height)
+        if self.move_up_P2:
+            self.player2.move(0, -self.player2.speed, self.screen_height)
+
+    def player1_EventHandler(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DOWN:
+                self.move_down_P1 = True
+            elif event.key == pygame.K_UP:
+                self.move_up_P1 = True
+
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_DOWN:
+                self.move_down_P1 = False
+            elif event.key == pygame.K_UP:
+                self.move_up_P1 = False
+
+    def player2_EventHandler(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_s:
+                self.move_down_P2 = True
+            elif event.key == pygame.K_w:
+                self.move_up_P2 = True
+
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_s:
+                self.move_down_P2 = False
+            elif event.key == pygame.K_w:
+                self.move_up_P2 = False
+
     def Play_Step(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-            # Moving the player
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN:
-                    self.player1.move(0,self.player1.speed)
-                if event.key == pygame.K_UP:
-                    self.player1.move(0,-self.player1.speed)
-                if event.key == pygame.K_LEFT:
-                    self.player1.move(-self.player1.speed,0)
-                if event.key == pygame.K_RIGHT:
-                    self.player1.move(self.player1.speed,0)
+                return
+            self.player1_EventHandler(event)
+            self.player2_EventHandler(event)
 
+
+        self.ball.MoveBall(self.screen_width,self.screen_height, self.player1, self.player2)
+
+
+        # Update player position based on movement flags
+        self.update_player_position()
 
         # Draw objects
         self.screen.fill(self.bg_color)
