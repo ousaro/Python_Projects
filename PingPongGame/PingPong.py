@@ -37,79 +37,60 @@ class Padel:
 
 
 class Ball:
-    def __init__(self, screen, radius, center, color, speed):
+    def __init__(self, screen,width, height, x_pos, y_pos, color, speedX,speedY):
         self.screen = screen
-        self.center = np.array(center, dtype=float)  # Use floating-point coordinates
-        self.radius = radius
+        self.width = width
+        self.height = height
+        self.rect = pygame.Rect(x_pos, y_pos, width, height)
         self.color = color
-        self.speed = speed
-        self.direction = np.array([1, 1], dtype=float)  # Initial direction vector
+        self.speedX = speedX
+        self.speedY = speedY
         self.score1 = 0
         self.score2 =0
 
     def draw_circle(self):
-        pygame.draw.circle(self.screen, self.color, (int(self.center[0]), int(self.center[1])), self.radius)
+        pygame.draw.ellipse(self.screen, self.color, self.rect)
 
     def MoveBall(self, screen_width, screen_height, player1, player2):
 
-        isPlayer1Collision = self.rect_circle_collision(player1)
-        isPlayer2Collision = self.rect_circle_collision(player2)
+        self.rect.x += self.speedX
+        self.rect.y += self.speedY
 
-        if isPlayer1Collision or isPlayer2Collision:
-            self.ChageDirection(-1,1)
-        if self.center[1] - self.radius < 0 or self.center[1] + self.radius > screen_height:
-            self.ChageDirection(1,-1)
+        if self.rect.top <= 0 or self.rect.bottom >= screen_height:
+            self.speedY *= -1
 
-
-
-        if  self.center[0] + self.radius < 0 :
-            self.center[0] = screen_width//2
-            self.center[1] = screen_height//2
-            self.ChageDirection(random.choice([1, -1]), random.choice([1, -1]))
+        if self.rect.left <= 0 :
             self.score2 +=1
-        if  self.center[0] - self.radius > screen_width:
-            self.center[0] = screen_width//2
-            self.center[1] = screen_height//2
-            self.ChageDirection(random.choice([1, -1]), random.choice([1, -1]))
+            self.RespawnBall(screen_width, screen_height)
+        if self.rect.right >= screen_width:
             self.score1 +=1
+            self.RespawnBall(screen_width, screen_height)
 
+        if self.rect.colliderect(player1) or self.rect.colliderect(player2):
+            self.speedX *= -1
 
-        # Update ball position based on speed and direction
-        self.center += self.speed * self.direction
+    def RespawnBall(self,screen_width, screen_height):
+        self.rect.center = (screen_width//2-10,screen_height//2-10)
+        self.speedX = self.speedX * random.choice((-1,1))
+        self.speedY = self.speedY * random.choice((-1,1))
 
-    def rect_circle_collision(self, player):
-        # Find the closest point on the rectangle to the circle's center
-        closest_x = max(player.rect.left, min(self.center[0], player.rect.right))
-        closest_y = max(player.rect.top, min(self.center[1], player.rect.bottom))
-
-        # Calculate the distance between the closest point and the circle's center
-        distance = math.sqrt((closest_x - self.center[0]) ** 2 + (closest_y - self.center[1]) ** 2)
-
-        # Check if the distance is less than or equal to the circle's radius
-        return distance < self.radius
-
-    def ChageDirection(self, xFactor, yFactor):
-        self.direction[0] *= xFactor
-        self.direction[1] *= yFactor
 
 
 class PingPongGame:
     def __init__(self):
-        # init screen
         self.screen_width, self.screen_height = 800, 600
         self.FPS = 60
         self.bg_color = BLACK
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-        pygame.display.set_caption("Ping Pong Game")
-        # init snake
+        pygame.display.set_caption("Pong Game")
         self.restart()
 
 
     def restart(self):
-        self.player1 = Padel(self.screen, 15, 120, 15, 100, WHITE, 5)
-        self.player2 = Padel(self.screen, 15, 120, self.screen_width-30, 100, WHITE, 5)
-        self.ball = Ball(self.screen,10, [self.screen_width//2,self.screen_height//2],WHITE,4)
+        self.player1 = Padel(self.screen, 10, 130, 5, 100, WHITE, 5)
+        self.player2 = Padel(self.screen, 10, 130, self.screen_width-15, 100, WHITE, 5)
+        self.ball = Ball(self.screen,20,20, self.screen_width//2-10,self.screen_height//2-10,WHITE,4,4)
         self.move_up_P1 = False
         self.move_down_P1 = False
         self.move_up_P2 = False
@@ -120,15 +101,10 @@ class PingPongGame:
         self.player1.draw()
         self.player2.draw()
         self.ball.draw_circle()
+        pygame.draw.aaline(self.screen,WHITE,(self.screen_width/2,0),(self.screen_width/2,self.screen_height))
 
-    def GameOver(self, pt=None):
-        if pt == None:
-            pt = self.head_Pos
-
-        is_Collision_Border = pt[0] < 0 or pt[0] >= self.screen_width or pt[1] < 0 or pt[1] >= self.screen_height
-        is_Collision_Body = pt in self.body_positions[1:]
-
-        if  is_Collision_Body or is_Collision_Border or self.frame_iteration > 100*len(self.body_positions):
+    def GameOver(self):
+        if self.ball.score1 >= 5 or self.ball.score2 >= 5:
             return True
         return False
 
@@ -190,7 +166,9 @@ class PingPongGame:
         # Update player position based on movement flags
         self.update_player_position()
 
-
+        if self.GameOver():
+            print(f'Player1 score : {self.ball.score1}, Player2 score : {self.ball.score2}')
+            pygame.exit()
 
         # Draw objects
         self.screen.fill(self.bg_color)
